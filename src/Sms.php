@@ -103,6 +103,12 @@ class Sms implements iSms
      */
     public function send($mobile, $templateKeyName, $data)
     {
+        $mobile = (string)$mobile;
+        if (!empty($data) && is_array($data)) {
+            foreach ($data as &$item) {
+                if (is_scalar($item)) $item = (string) $item;
+            }
+        }
         /**
          * Step 3. 生成SMS消息属性
          */
