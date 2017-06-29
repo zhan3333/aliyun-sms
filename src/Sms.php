@@ -137,10 +137,11 @@ class Sms implements iSms
                     'data' => $data,
                     'mobile' => $mobile,
                     'service_provider' => strtolower($this->getSmsName()),
-                    'ip' => getClientIp(),
+                    'ip' => $this->getClientIp(),
                     'send_result' => $result,
                     'template_key_name' => $templateKeyName,
-                    'template_id' => $templateId
+                    'template_id' => $templateId,
+                    'message_id' => $result->getMessageId()
                 ]]);
             }
             return $result->isSucceed();
@@ -152,7 +153,7 @@ class Sms implements iSms
                     'data' => $data,
                     'mobile' => $mobile,
                     'service_provider' => strtolower($this->getSmsName()),
-                    'ip' => getClientIp(),
+                    'ip' => $this->getClientIp(),
                     'send_result' => $e,
                     'template_key_name' => $templateKeyName,
                     'template_id' => $templateId
@@ -261,5 +262,21 @@ class Sms implements iSms
     public function saveCacheCode($mobile, $templateKeyName, $code)
     {
         // 保存code到缓存中
+    }
+
+    /**
+     * 获取客户端ip
+     * @return array|false|string
+     */
+    public function getClientIp() {
+        if (getenv("HTTP_CLIENT_IP"))
+            $ip = getenv("HTTP_CLIENT_IP");
+        else if(getenv("HTTP_X_FORWARDED_FOR"))
+            $ip = getenv("HTTP_X_FORWARDED_FOR");
+        else if(getenv("REMOTE_ADDR"))
+            $ip = getenv("REMOTE_ADDR");
+        else
+            $ip = "Unknow";
+        return $ip;
     }
 }
