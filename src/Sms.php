@@ -99,7 +99,7 @@ class Sms implements iSms
      * @param string $templateKeyName 模板名称
      * @param array $data 模板参数
      * @return bool 是否发送成功
-     * @throws SmsException
+     * @throws SmsException|MnsException
      */
     public function send($mobile, $templateKeyName, $data)
     {
@@ -117,7 +117,7 @@ class Sms implements iSms
         if (empty($templateId)) throw new SmsException('aliyunsms.template.' . $templateKeyName . ' 未找到配置');
         $batchSmsAttributes = new BatchSmsAttributes($this->signName, $templateId);
         // 3.2 （如果在短信模板中定义了参数）指定短信模板中对应参数的值
-        $batchSmsAttributes->addReceiver('13517210601', $data);
+        $batchSmsAttributes->addReceiver($mobile, $data);
         $messageAttributes = new MessageAttributes(array($batchSmsAttributes));
         /**
          * Step 4. 设置SMS消息体（必须）
@@ -129,37 +129,21 @@ class Sms implements iSms
          * Step 5. 发布SMS消息
          */
         $request = new PublishMessageRequest($messageBody, $messageAttributes);
-        try
-        {
-            $result = $this->topic->publishMessage($request);
-            if ($this->sendCallback) {
-                call_user_func_array($this->sendCallback, [[
-                    'data' => $data,
-                    'mobile' => $mobile,
-                    'service_provider' => strtolower($this->getSmsName()),
-                    'ip' => $this->getClientIp(),
-                    'send_result' => $result,
-                    'template_key_name' => $templateKeyName,
-                    'template_id' => $templateId,
-                    'message_id' => $result->getMessageId()
-                ]]);
-            }
-            return $result->isSucceed();
+
+        $result = $this->topic->publishMessage($request);
+        if ($this->sendCallback) {
+            call_user_func_array($this->sendCallback, [[
+                'data' => $data,
+                'mobile' => $mobile,
+                'service_provider' => strtolower($this->getSmsName()),
+                'ip' => $this->getClientIp(),
+                'send_result' => $result,
+                'template_key_name' => $templateKeyName,
+                'template_id' => $templateId,
+                'message_id' => $result->getMessageId()
+            ]]);
         }
-        catch (MnsException $e)
-        {
-            if ($this->sendCallback) {
-                call_user_func_array($this->sendCallback, [[
-                    'data' => $data,
-                    'mobile' => $mobile,
-                    'service_provider' => strtolower($this->getSmsName()),
-                    'ip' => $this->getClientIp(),
-                    'send_result' => $e,
-                    'template_key_name' => $templateKeyName,
-                    'template_id' => $templateId
-                ]]);
-            }
-        }
+        return $result->isSucceed();
     }
 
     /**
