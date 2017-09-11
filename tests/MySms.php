@@ -77,4 +77,18 @@ class MySms extends \AliyunSms\Sms
         $path = __DIR__ . '/' . $key;
         file_put_contents($path, $code);
     }
+
+    /**
+     * 发送完验证码后执行方法
+     * @param array $data 短信参数
+     * @param string $mobile 手机号
+     * @param object $result 发送结果
+     * @param string $template_key_name 模板名称
+     * @param string $template_id 模板id
+     * @param string $message_id 消息id
+     */
+    public function sendDo($data, $mobile, $result, $template_key_name, $template_id, $message_id)
+    {
+        // TODO: Implement sendDo() method.
+    }
 }

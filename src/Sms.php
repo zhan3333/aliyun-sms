@@ -10,10 +10,6 @@ namespace AliyunSms;
 require_once __DIR__ . '/sdk/mns-autoloader.php';
 
 use AliyunMNS\Client;
-use AliyunMNS\Topic;
-use AliyunMNS\Constants;
-use AliyunMNS\Model\MailAttributes;
-use AliyunMNS\Model\SmsAttributes;
 use AliyunMNS\Model\BatchSmsAttributes;
 use AliyunMNS\Model\MessageAttributes;
 use AliyunMNS\Exception\MnsException;
@@ -23,7 +19,7 @@ use AliyunMNS\Requests\PublishMessageRequest;
 /**
  * @property  endPoint
  */
-class Sms implements iSms
+abstract class Sms implements iSms
 {
     private $endPoint;
     private $accessId;
@@ -31,7 +27,6 @@ class Sms implements iSms
     private $client;
     private $topic;
     private $signName;
-    private $sendCallback;
 
     /**
      * @var mixed
@@ -131,18 +126,8 @@ class Sms implements iSms
         $request = new PublishMessageRequest($messageBody, $messageAttributes);
 
         $result = $this->topic->publishMessage($request);
-        if ($this->sendCallback) {
-            call_user_func_array($this->sendCallback, [[
-                'data' => $data,
-                'mobile' => $mobile,
-                'service_provider' => strtolower($this->getSmsName()),
-                'ip' => $this->getClientIp(),
-                'send_result' => $result,
-                'template_key_name' => $templateKeyName,
-                'template_id' => $templateId,
-                'message_id' => $result->getMessageId()
-            ]]);
-        }
+        // 发送完成后执行
+        $this->sendDo($data, $mobile, $result, $templateKeyName, $templateId, $result->getMessageId());
         return $result->isSucceed();
     }
 
@@ -153,15 +138,6 @@ class Sms implements iSms
     public function getSmsName()
     {
         return 'Aliyun';
-    }
-
-    /**
-     * 发送
-     * @param $callback
-     */
-    public function setSendCallback($callback)
-    {
-        $this->sendCallback = $callback;
     }
 
     /**
@@ -198,56 +174,6 @@ class Sms implements iSms
         return rand($min, $max);
     }
 
-    public function getCacheKeyPrefix($mobile, $templateKeyName)
-    {
-        // 获取缓存键值
-    }
-
-    /**
-     * 从缓存中读验证码
-     * @param $mobile
-     * @param $templateKeyName
-     * @return bool|string
-     */
-    public function getCacheCode($mobile, $templateKeyName)
-    {
-        // 获取缓存中的code
-    }
-
-    /**
-     * 删除缓存验证码
-     * @param $mobile
-     * @param $templateKeyName
-     */
-    public function delCacheCode($mobile, $templateKeyName)
-    {
-        // 删除缓存中code
-    }
-
-    /**
-     * 验证验证码是否正确
-     * @param $mobile
-     * @param $templateKeyName
-     * @param $code
-     * @param bool $isDelete
-     * @return bool
-     */
-    public function checkCode($mobile, $templateKeyName, $code, $isDelete = true)
-    {
-        // 验证code是否正确
-    }
-
-    /**
-     * 保存验证码
-     * @param $mobile
-     * @param $templateKeyName
-     * @param $code
-     */
-    public function saveCacheCode($mobile, $templateKeyName, $code)
-    {
-        // 保存code到缓存中
-    }
-
     /**
      * 获取客户端ip
      * @return array|false|string
@@ -263,4 +189,58 @@ class Sms implements iSms
             $ip = "Unknow";
         return $ip;
     }
+
+    // 需要子类实现的
+
+    /**
+     * 获取缓存的key name
+     * @param $mobile
+     * @param $templateKeyName
+     * @return mixed
+     */
+    abstract function getCacheKeyPrefix($mobile, $templateKeyName);
+
+    /**
+     * 从缓存中读验证码
+     * @param $mobile
+     * @param $templateKeyName
+     * @return bool|string
+     */
+    abstract function getCacheCode($mobile, $templateKeyName);
+
+    /**
+     * 删除缓存验证码
+     * @param $mobile
+     * @param $templateKeyName
+     */
+    abstract function delCacheCode($mobile, $templateKeyName);
+
+    /**
+     * 验证验证码是否正确
+     * @param $mobile
+     * @param $templateKeyName
+     * @param $code
+     * @param bool $isDelete
+     * @return bool
+     */
+    abstract function checkCode($mobile, $templateKeyName, $code, $isDelete = true);
+
+    /**
+     * 保存验证码
+     * @param $mobile
+     * @param $templateKeyName
+     * @param $code
+     */
+    abstract function saveCacheCode($mobile, $templateKeyName, $code);
+
+    /**
+     * 发送完验证码后执行方法
+     * @param array $data           短信参数
+     * @param string $mobile               手机号
+     * @param object $result               发送结果
+     * @param string $template_key_name    模板名称
+     * @param string $template_id          模板id
+     * @param string $message_id           消息id
+     */
+    abstract function sendDo($data, $mobile, $result, $template_key_name, $template_id, $message_id);
 }

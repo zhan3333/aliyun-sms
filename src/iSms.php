@@ -39,16 +39,4 @@ interface iSms
      * @return string
      */
     public function getSmsName();
-
-    public function setSendCallback($callback);
-
-    public function checkCode($mobile, $templateKeyName, $code);
-
-    public function saveCacheCode($mobile, $templateKeyName, $code);
-
-    public function getCacheCode($mobile, $templateKeyName);
-
-    public function delCacheCode($mobile, $templateKeyName);
-
-    public function getCacheKeyPrefix($mobile, $templateKeyName);
 }
